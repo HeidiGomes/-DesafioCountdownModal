@@ -26,6 +26,19 @@
 </main>
 
 <style>
+
+  body{
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Oculta as barras de rolagem */
+    background: linear-gradient(45deg, #8e3de2, #4a00e0);
+    min-height: 100vh;
+    min-width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Poppins', sans-serif;
+}
   /* Navigation button styles */
   .navigation-button {
     position: fixed;
