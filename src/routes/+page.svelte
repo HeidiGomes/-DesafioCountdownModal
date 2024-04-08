@@ -1,36 +1,44 @@
+<!-- src/routes/+page.svelte -->
 <script>
   import { writable, get } from 'svelte/store';
   import { goto } from '$app/navigation';
   import Modal from './Modal.svelte';
   import Candidate from './candidatos/Candidate.svelte';
-  
+
   let formData = writable({ name: '', phone: '', email: '' });
   let timer = writable(15);
   let interval;
   let showModal = false;
   let modalText = '';
   let timeIsUp = false;
-  let showTimer = false; // Variável para controlar a visibilidade do timer
-  let showCandidateButton = false; // Variável para controlar a visibilidade do botão "Candidate"
-
+  let showCandidateButton = false;
+  let showTimer = false; // Moves the showTimer variable declaration out of the scope of the script block
+  
+  // Function to start the challenge
   function startChallenge() {
-    interval = setInterval(() => {
-      timer.update(n => {
-        if (n <= 0) {
-          clearInterval(interval);
-          timeIsUp = true;
-          showModal = true;
-          modalText = "Challenge ended with failure!";
-          return 0;
-        }
-        return n - 1;
-      });
-    }, 1000);
+    // If there is a stored timer, set the timer to the stored value
+    if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('timer') !== null) {
+      timer.set(JSON.parse(sessionStorage.getItem('timer')));
+    } else {
+      // Otherwise, start a new timer
+      interval = setInterval(() => {
+        timer.update(n => {
+          if (n <= 0) {
+            clearInterval(interval);
+            timeIsUp = true;
+            showModal = true;
+            modalText = "Challenge ended with failure!";
+            return 0;
+          }
+          return n - 1;
+        });
+      }, 1000);
+    }
 
-    // Mostra o timer quando o desafio é iniciado
+    // Shows the timer when the challenge starts
     showTimer = true;
 
-    // Exibe o botão "Candidate"
+    // Display the "Candidate" button
     showCandidateButton = true;
   }
 
@@ -42,17 +50,19 @@
     stopChallenge();
     modalText = get(timer) <= 0 ? "Challenge ended with failure!" : "Challenge ended successfully!";
     showModal = true;
-
-    // Save form data in session storage
     sessionStorage.setItem('formData', JSON.stringify(get(formData)));
+    sessionStorage.setItem('timer', JSON.stringify(get(timer)));
   }
 
   function goToCandidatePage() {
     const formDataValue = get(formData);
+    sessionStorage.setItem('formData', JSON.stringify(formDataValue));
     goto('/candidatos', { state: { formData: formDataValue } });
   }
 
   function goToHomePage() {
+    // Remove the sessionStorage timer when leaving the page
+    sessionStorage.removeItem('timer');
     goto('/');
   }
 
@@ -65,6 +75,13 @@
     if (event.target === event.currentTarget) {
       closeModal();
     }
+  }
+
+  
+// Check if there is a timer stored in sessionStorage when loading the page
+  if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('timer') !== null) {
+    timer.set(JSON.parse(sessionStorage.getItem('timer')));
+    showTimer = true;
   }
 </script>
 
@@ -113,7 +130,7 @@
 
 }
 
-/* Estilos para os campos de entrada */
+/* Styles for input fields */
 .form-container input {
   position: relative;
   width: 100%;
@@ -126,17 +143,17 @@
   transition: border-color 0.3s ease-in-out;
 }
 
-/* Margem inferior para o primeiro campo de entrada */
+/* Bottom margin for first input field */
 .form-container input:first-child {
   margin-bottom: 1rem;
 }
 
-/* Efeito de linha de sublinhado ao focar */
+/* Underline effect when focusing */
 .form-container input:focus {
   border-color: rgba(0, 0, 0, 0.7);
 }
 
-/* Estilos para o texto de espaço reservado (placeholder) */
+/* Styles for placeholder text */
 .form-container input::placeholder {
   color: rgba(0, 0, 0, 0.7);
 }
@@ -146,65 +163,68 @@
   border-color: rgba(0, 0, 0, 0);
   
 }
+.icon {
+    width: 24px;
+    height: 24px;
+  }
 
 .input-container {
-  position: relative;
-}
+    position: relative; /* Sets relative positioning so we can position the icon */
 
-.input-container i {
-  position: absolute;
-  left: 8px;
-  top: 40%;
-  transform: translateY(-50%);
-  font-size: 1.2rem;
-}
+    width: 100%; /* Ensures that the input field occupies the entire width */
 
-.input-container input {
-  padding-left: 30px; /* Deixe espaço suficiente para o ícone */
-}
+  }
+
+  .input-container input {
+    padding-left: 40px; /* Leave enough space for the icon */
+  }
+
+  .input-container .icon {
+    position: absolute; /* Sets absolute positioning so that the icon can be positioned within the input field */
+    left: 10px; /* Positions the icon 10px to the left of the input field */
+    top: 50%; /* Vertically centers the icon */
+    transform: translateY(-80%); /* Fix the vertical position of the icon */
+  }
+
 
 </style>
 
 <body>
   <div class="form-container">
-  <h1>Challenge</h1>
+    <h1>Challenge</h1>
+    <form>
+      <div class="input-container">
+        <input type="text" bind:value={$formData.name} placeholder="Enter your name" />
+        <img src="/name.png" alt="Icon" class="icon" />
+      </div>
 
-  <form>
+      <div class="input-container">
+        <input type="tel" bind:value={$formData.phone} placeholder="Enter your phone" />
+        <img src="/phone.png" alt="Icon" class="icon" />
+      </div>
 
-    <div class="input-container">
-      <input type="text" bind:value={$formData.name} placeholder="Enter your name" />
-      
-    </div>
+      <div class="input-container">
+        <input type="email" bind:value={$formData.email} placeholder="Enter your Email" />
+        <img src="/email.png" alt="Icon" class="icon" />
+      </div>
 
-    <div class="input-container">
-      <input type="tel" bind:value={$formData.phone} placeholder="Enter your phone" />
-      
-    </div>
+      <button on:click={startChallenge}>Start Challenge</button>
+      <button on:click={openModal}>Submit</button>
 
-    <div class="input-container">
-      <input type="email" bind:value={$formData.email} placeholder="Enter your Email" />
-      
-    </div>
-
-    <button on:click={startChallenge}>Start Challenge</button>
-    <button on:click={openModal}>Submit</button>
-
-      {#if showTimer && $timer > 0} <!-- Mostra o timer apenas quando showTimer for true -->
+      {#if showTimer && $timer > 0}
         <div>
           Remaining time: {('0' + Math.floor($timer / 60)).slice(-2)}:{('0' + ($timer % 60)).slice(-2)}
         </div>
       {/if}
-
     </form>
   </div>
 
-  {#if showModal || timeIsUp}
+  {#if showModal && timeIsUp}
     <div class="modal-overlay" on:click={closeModalOutside}>
       <Modal text={modalText} onClose={closeModal} />
     </div>
   {/if}
 
-  <!-- Button to navigate to the "candidates" page -->
   {#if showCandidateButton}
     <button class="navigation-button" on:click={goToCandidatePage}>Candidate</button>
   {/if}
